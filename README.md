@@ -1,16 +1,16 @@
-# Contribution [#]: [Issue Title]
+# Contribution [1]: [Issue Title]
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** [1]  
+**Student:** [Samuel Perez]  
+**Issue:** [https://github.com/teableio/teable/issues/1254]  
+**Status:** [Phase I]
 
+Teable currently lacks a proper web app manifest configuration, meaning users who install it as a PWA on mobile devices are stuck with browser chrome (address bar, navigation buttons) taking up valuable screen space. This matters because PWA support is an increasingly expected feature for modern web apps, and the fix is a high-impact UX improvement that requires minimal code changes.
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
-
+I chose this issue because it has a clearly defined solution, adding display: standalone to the web manifest, well-linked documentation, and a welcoming maintainer, making it an ideal entry point into open source contribution without requiring deep familiarity with the codebase.
 ---
 
 ## Understanding the Issue
