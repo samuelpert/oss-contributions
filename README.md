@@ -1,16 +1,16 @@
-# Contribution [1]: [Issue Title]
+# Contribution [1]: [Bug] /crawl/job and /llm/job return HTTP 500 when jwt_enabled=true
 
 **Contribution Number:** [1]  
 **Student:** [Samuel Perez]  
-**Issue:** [https://github.com/teableio/teable/issues/1254]  
+**Issue:** [https://github.com/unclecode/crawl4ai/issues/2016]  
 **Status:** [Phase I]
 
-Teable currently lacks a proper web app manifest configuration, meaning users who install it as a PWA on mobile devices are stuck with browser chrome (address bar, navigation buttons) taking up valuable screen space. This matters because PWA support is an increasingly expected feature for modern web apps, and the fix is a high-impact UX improvement that requires minimal code changes.
+Crawl4ai currently has a bug where enabling JWT authentication (security.jwt_enabled: true in config.yml) breaks all four async job endpoints (POST /crawl/job, POST /llm/job, and their corresponding GET .../job/{task_id} status endpoints), causing them to return HTTP 500 Internal Server Error with AttributeError: 'Depends' object has no attribute 'credentials'. Meanwhile, all synchronous endpoints (/crawl, /md, /html, /screenshot, /pdf) work correctly with the same JWT. This matters because it makes the entire async task workflow unusable for any deployment that relies on JWT-based auth, forcing users to fall back to synchronous endpoints and lose the async/polling pattern.
 ---
 
 ## Why I Chose This Issue
 
-I chose this issue because it has a clearly defined solution, adding display: standalone to the web manifest, well-linked documentation, and a welcoming maintainer, making it an ideal entry point into open source contribution without requiring deep familiarity with the codebase.
+I chose this issue because it has a clearly defined solution: replacing the Depends(lambda: _token_dep()) pattern with Depends(_token_dep) in deploy/docker/job.py (lines 59, 90, 100, 126), which lets FastAPI resolve the dependency normally instead of returning an unresolved Depends object. The root cause is already well-documented in the issue, with a working reference pattern from server.py to compare against, making it an ideal entry point into open source contribution.
 ---
 
 ## Understanding the Issue
