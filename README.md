@@ -17,19 +17,25 @@ I chose this issue because the maintainer already reviewed and approved the over
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
+I need to add a feature that add seconds in a clock that has minutes and hours
 
 ### Expected Behavior
 
-[What should happen?]
+Display seconds live 
 
 ### Current Behavior
 
-[What actually happens?]
+No seconds so it is a non-existent feature
 
 ### Affected Components
 
-[Which parts of the codebase are involved?]
+server route -> clocks.js
+main template -> clock.html
+config UI -> clock-config.html
+Shared styles -> clock-shared.css
+Config Styles -> clock-config.css
+Client logic -> clock-client.js
+Bundle entry -> bundle.clocks.source.js
 
 ---
 
