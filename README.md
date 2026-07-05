@@ -43,19 +43,26 @@ Bundle entry -> bundle.clocks.source.js
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+Cloned my fork, created a Python-free Node environment (Node LTS v22), `npm install`, and set
+up `my.env` with a MongoDB connection, `API_SECRET`, `NODE_ENV=development`, and
+`INSECURE_USE_HTTP=true`. Ran the app with `npm run dev` (env-cmd + nodemon).
+
+The main setup challenge came later during verification: understanding that in
+`NODE_ENV=development` the client JS is served **in-memory** by webpack-dev-middleware from
+`/devbundle`, not from the on-disk `/bundle` directory (see Challenges).
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Run Nightscout with the default settings.
+2. Observe the dashboard clock top-left.
+3. **Observed result:** it shows `HH:MM` only (e.g. `23:35`), never seconds.
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **My findings:** `grep -rn` for `SHOW_SECONDS` / `showSeconds` returned zero matches in the
+  codebase — the feature genuinely did not exist. The format constants in
+  `lib/client/index.js` (`FORMAT_TIME_12 = '%-I:%M %p'`, `FORMAT_TIME_24 = '%H:%M%'`) had no
+  seconds token, and `updateClock` intentionally ticked at `min(15s, time-to-next-minute)`.
 
 ---
 
@@ -63,30 +70,44 @@ Bundle entry -> bundle.clocks.source.js
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+Root cause: there was no seconds-capable time format and no per-user setting to select it, plus
+the clock refresh interval was minute-aligned (~15s max) so even a seconds format would not tick
+live. PR #8392 took the right approach but shipped four defects flagged by the maintainer.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+Register a new `showSeconds` browser setting (auto-exposed as the `SHOW_SECONDS` env var),
+render a seconds time format when it is enabled, and drop the clock tick to 1s in that mode.
+Wire it through the settings dialog and the Azure deploy template, and fix the four defects.
 
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [Restate the problem]
+**Understand:** Add an opt-in `SHOW_SECONDS` browser setting that makes the dashboard clock
+display live seconds, without regressing default behavior.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:** Mirrored the existing boolean browser settings `nightMode` / `editMode` end to end —
+default in `lib/settings.js`, a `mapTruthy` value mapper, load/save in
+`lib/client/browser-settings.js`, a checkbox in `views/index.html`, and a param+appSettings
+pair in `azuredeploy.json` (modeled on `NIGHT_MODE`). Nightscout auto-derives the env-var name
+via `_.snakeCase(key).toUpperCase()`, so `showSeconds` → `SHOW_SECONDS` for free.
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+**Plan:** 
+1. `lib/settings.js` — add `showSeconds: false` default + `showSeconds: mapTruthy` mapper.
+2. `lib/client/index.js` — add `FORMAT_TIME_12_SECONDS` / `FORMAT_TIME_24_SECONDS`, use them in
+   `getTimeFormat()`, and make `updateClock()` tick at 1s when enabled.
+3. `lib/client/browser-settings.js` — load + persist the checkbox.
+4. `views/index.html` — add the "Show Seconds" toggle to the settings dialog.
+5. `tests/settings.test.js` — add `SHOW_SECONDS` and update the expected env-var count.
+6. `azuredeploy.json` — add the `show_seconds` parameter and wire it into `appSettings`.
 
-**Implement:** [Link to your branch/commits as you work]
+**Implement:** Branch `feat/clock-seconds-display` on my fork
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+**Review:** eslint clean, `git diff --check` clean, JSON validates, tests pass, diff scoped to
+the 6 intended files (reverted an unrelated whitespace-only edit to `clock-client.js`).
 
-**Evaluate:** [How will you verify it works?]
+**Evaluate:** Validate locally by `npm run dev ` and check the timer in the dashboard to confirm the "seconds" feature are working as expected.
 
 ---
 
@@ -94,36 +115,43 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [x] `tests/settings.test.js` "support setting from env vars" — added `SHOW_SECONDS` to the
+      expected list and updated the hard-coded count from 24 to 25. Suite passes: **13 passing**.
+- [x] Verified the four `getTimeFormat` branches produce correct output against the real d3
+      library: `12h/off → 2:05`, `12h/on → 2:05:09 PM`, `24h/off → 14:05`, `24h/on → 14:05:09`.
+- [x] Verified `updateClock` interval logic: 1000ms when `showSeconds` is on, 15000ms otherwise.
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [x] `npx eslint lib/client/index.js lib/client/browser-settings.js lib/settings.js
+      tests/settings.test.js` — clean (confirms the `no-redeclare` fix).
+- [x] `git diff --check` — clean (confirms the trailing-whitespace fix).
+- [x] `azuredeploy.json` parses as valid JSON and `SHOW_SECONDS` is wired into
+      `siteConfig.appSettings`.
 
 ### Manual Testing
 
-[What you tested manually and results]
+Ran the app locally (`NODE_ENV=development`, `TIME_FORMAT=24`, `SHOW_SECONDS=true`). After
+restarting the dev server and reloading, the dashboard clock rendered live seconds and ticked
+every second. Also validated the UI path: hamburger → Settings → "Show Seconds" → Save.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+**What I built:** An opt-in `SHOW_SECONDS` browser setting that adds live seconds to the
+dashboard clock (both 12h and 24h), a settings-dialog checkbox to toggle it, Azure one-click
+deploy support, and fixes for all four maintainer-identified defects from PR #8392:
 
-[What you built this week, challenges faced, decisions made]
+1. `no-redeclare` lint error — declared `var interval` once and assigned it in each branch of
+   `updateClock()`.
+2. Failing settings test — added `SHOW_SECONDS` and bumped the expected count 24 → 25.
+3. Azure template — the `show_seconds` parameter is now actually wired into
+   `siteConfig.appSettings` as `SHOW_SECONDS` (previously declared but non-functional).
+4. Trailing whitespace in `browser-settings.js` — removed.
 
-### Week [Y] Progress
-
-[Continue documenting as you work]
-
-### Code Changes
-
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+I re-implemented the feature cleanly rather than building on the prior branch, so the four
+defects are avoided by construction.
 
 ---
 
