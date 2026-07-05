@@ -3,7 +3,7 @@
 **Contribution Number:** [1]  
 **Student:** [Samuel Perez]  
 **Issue:** [https://github.com/nightscout/cgm-remote-monitor/issues/8048]
-**Status:** [Phase I]
+**Status:** [Phase III]
 
 Nightscout currently lacks the ability to display seconds in the clock widget. A feature request was opened to add a SHOW_SECONDS environment variable as a browser-level setting, which would let users opt into showing seconds without affecting anyone who doesn't want it. A previous contributor submitted PR #8392 attempting this feature, but it was not merged due to four specific issues identified by the maintainer.
 ---
