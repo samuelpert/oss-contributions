@@ -3,7 +3,7 @@
 **Contribution Number:** [1]  
 **Student:** [Samuel Perez]  
 **Issue:** [https://github.com/nightscout/cgm-remote-monitor/issues/8048]
-**Status:** [Phase III]
+**Status:** [Phase IV]
 
 Nightscout currently lacks the ability to display seconds in the clock widget. A feature request was opened to add a SHOW_SECONDS environment variable as a browser-level setting, which would let users opt into showing seconds without affecting anyone who doesn't want it. A previous contributor submitted PR #8392 attempting this feature, but it was not merged due to four specific issues identified by the maintainer.
 ---
@@ -157,15 +157,34 @@ defects are avoided by construction.
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** [https://github.com/nightscout/cgm-remote-monitor/pull/8555]
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:**
+
+## What does this PR do?
+
+Adds an opt-in `SHOW_SECONDS` browser setting that displays live seconds on the dashboard clock, in both 12-hour and 24-hour time formats. When enabled, the clock format switches to include seconds (e.g. `2:05:09 PM` / `14:05:09`) and the clock refresh interval drops to 1 second so the seconds display stays live; when disabled (the default), behavior is unchanged. The setting is exposed via a checkbox in the browser Settings dialog, as an environment variable (`SHOW_SECONDS`), and as an Azure one-click deploy parameter.
+
+## Why was this PR needed?
+
+This closes #8048, a feature request for a seconds-capable dashboard clock. A previous attempt (#8392) implemented the same idea and was reviewed as directionally correct, but was blocked on four issues: a `no-redeclare` lint error from redeclaring `var interval` in both branches of `updateClock()`, a settings test with a stale hard-coded env-var count, an Azure deploy parameter that was declared but never wired into `siteConfig.appSettings`, and trailing whitespace flagged by `git diff --check`. This PR re-implements the feature from scratch following the same pattern as existing boolean browser settings (`nightMode`, `editMode`), which avoids all four issues by construction rather than patching them after the fact.
+
+## What are the relevant issue numbers?
+
+Closes #8048
+
+## Does this PR meet the acceptance criteria?
+
+- [x] Tests added for new/changed behavior
+- [x] All tests passing
+- [x] Follows project style guide
+- [x] No breaking changes introduced
 
 **Maintainer Feedback:**
 - [Date]: [Summary of feedback received]
 - [Date]: [How you addressed it]
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+**Status:** [Awaiting review]
 
 ---
 
